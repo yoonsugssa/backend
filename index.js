@@ -1,11 +1,8 @@
-// backend/index.js - VERSIÓN FINAL Y COMPROBADA
-
 const express = require('express');
 const sequelize = require('./db');
 require('dotenv').config();
 const cors = require('cors');
 
-// Importar el modelo Cliente (definido en postgres.js)
 const Cliente = require('./postgres'); 
 
 const app = express();
@@ -16,16 +13,13 @@ const port = process.env.PORT || 4001;
 
 async function startServer() {
     try {
-        // 1. Conexión y sincronización de DB
         await sequelize.authenticate();
         console.log('✅ Conectado a PostgreSQL');
         await sequelize.sync({ alter: true });
         console.log('🛠 Tablas sincronizadas');
         
-        // --- RUTAS DE LA API (DEBEN ESTAR AQUÍ) ---
         app.get('/clientes', async (req, res) => {
             try {
-                // Consulta la tabla 'cliente'
                 const registros = await Cliente.findAll(); 
                 res.json(registros);
             } catch (error) {
@@ -34,12 +28,10 @@ async function startServer() {
             }
         });
 
-        // Ruta de prueba (/)
         app.get('/', (req, res) => {
             res.send('Servidor conectado a la DB 🏴‍☠');
         });
         
-        // 2. Iniciar el servidor (DEBE SER EL ÚLTIMO PASO)
         app.listen(port, () => {
             console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
         });
