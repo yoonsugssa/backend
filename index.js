@@ -29,11 +29,12 @@ async function startServer() {
         });
 
         app.get('/', (req, res) => {
-            res.send('Servidor conectado a la DB 🏴‍☠');
+            res.send('Servidor conectado a la DB 🎉');
         });
         
         app.listen(port, () => {
-            console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
+            console.log(`✔ Servidor corriendo en http://localhost:${port}`);
+            console.log(`✔ La tabla corriendo en http://localhost:${port}/clientes`);
         });
 
     } catch (error) {
