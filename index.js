@@ -11,23 +11,23 @@ app.use(cors());
 
 const port = process.env.PORT || 3001; 
 
+const getClientsHandler = async (req, res) => {
+    try {
+        const registros = await Cliente.findAll(); 
+        res.json(registros);
+    } catch (error) {
+        res.status(500).json({ error: 'Error interno del servidor al obtener clientes' });
+    }
+};
+
 async function startServer() {
     try {
         await sequelize.authenticate();
         await sequelize.sync({ alter: true }); 
         
-        app.get('/', (req, res) => {
-            res.send('Servidor de API operativo. Usa la ruta /clientes para obtener los datos.');
-        });
+        app.get('/', getClientsHandler);
         
-        app.get('/clientes', async (req, res) => {
-            try {
-                const registros = await Cliente.findAll(); 
-                res.json(registros);
-            } catch (error) {
-                res.status(500).json({ error: 'Error interno del servidor al obtener clientes' });
-            }
-        });
+        app.get('/clientes', getClientsHandler);
         
         app.post('/clientes', async (req, res) => {
             const { nombre } = req.body;
@@ -45,12 +45,12 @@ async function startServer() {
         });
 
         app.listen(port, () => {
-            console.log(`Servidor escuchando en http://localhost:${port}`);
+            
         });
 
     } catch (error) {
-        console.error('No se pudo conectar a la base de datos:', error);
+        
     }
 }
 
-startServer();
+startServer();  
