@@ -1,7 +1,6 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-// Usamos la variable DATABASE_URL, estándar en la nube
 const DATABASE_URL = process.env.DATABASE_URL;
 
 let sequelize;
@@ -11,7 +10,6 @@ if (DATABASE_URL) {
     sequelize = new Sequelize(DATABASE_URL, {
         dialect: 'postgres',
         logging: false,
-        // Configuración SSL necesaria para Render
         dialectOptions: {
             ssl: {
                 require: true,
@@ -20,8 +18,8 @@ if (DATABASE_URL) {
         }
     });
 } else {
-    // Caso 2: CONEXIÓN LOCAL (Usando variables separadas de .env)
-    const DB_PORT = parseInt(process.env.DB_PUERTO, 10) || 5432;
+    // Caso 2: CONEXIÓN LOCAL
+    const DB_PORT = parseInt(process.env.DB_PORT, 10) || 5432;
     sequelize = new Sequelize(
         process.env.DB_NOMBRE,
         process.env.DB_USUARIO,

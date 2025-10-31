@@ -2,7 +2,6 @@ const express = require('express');
 const sequelize = require('./db');
 require('dotenv').config();
 const cors = require('cors');
-// 🔑 Importar el módulo 'path'
 const path = require('path'); 
 
 const Cliente = require('./postgres'); 
@@ -15,11 +14,9 @@ const port = process.env.PORT || 3001;
 
 const getClientsHandler = async (req, res) => {
     try {
-        // Consulta todos los registros de la tabla definida en 'postgres.js'
         const registros = await Cliente.findAll(); 
         res.json(registros);
     } catch (error) {
-        // Log para depuración
         console.error('Error al obtener clientes:', error); 
         res.status(500).json({ error: 'Error interno del servidor al obtener clientes' });
     }
@@ -32,12 +29,9 @@ async function setupApp() {
         await sequelize.sync({ alter: true }); 
         
         // --- DEFINICIÓN DE RUTAS API ---
-        
-        // 🔑 CAMBIO 1: La ruta API GET se mueve a un prefijo (ej. /api/clientes)
-        // Esto evita el conflicto con el archivo index.html
         app.get('/api/clientes', getClientsHandler);
         
-        app.post('/api/clientes', async (req, res) => { // La ruta POST también debe ser /api/clientes
+        app.post('/api/clientes', async (req, res) => {
             const { nombre } = req.body;
             
             if (!nombre) {
@@ -53,30 +47,23 @@ async function setupApp() {
             }
         });
 
-        // ----------------------------------------------------------------------------------
-        // 🔑 PASO CLAVE 2: Configurar el servicio de archivos estáticos (Frontend)
-        // Express buscará el index.html en la carpeta 'dist' cuando se acceda a la raíz (/)
-        // Esto debe ir DESPUÉS de las rutas API para que las rutas API tengan prioridad.
-        // Asumiendo que tu frontend compilado está en la carpeta 'dist'.
-        // ----------------------------------------------------------------------------------
-        const frontendPath = path.join(__dirname, 'dist'); 
+        // --- CONFIGURACIÓN PARA SERVIR EL FRONTEND (SPA) ---
+        const frontendPath = path.join(__dirname, '..', 'frontend', 'dist'); // <-- ¡LÍNEA CLAVE CORREGIDA!
         app.use(express.static(frontendPath));
 
-        // 🔑 PASO CLAVE 3 (Para Routers de Frontend como Vue/React):
-        // Para gestionar rutas que no coinciden (ej. /login o /acerca-de) sin que el servidor
-        // devuelva un 404, se devuelve siempre el index.html
-        app.get('*', (req, res) => {
-            res.sendFile(path.join(frontendPath, 'index.html'));
+        // 🔑 CORRECCIÓN FINAL: Usar app.use como catch-all. Esto evita el error de sintaxis 'Missing parameter name'.
+        app.use((req, res) => { 
+        (path.join(frontendPath, 'index.html'));
         });
 
         return app; 
     } catch (error) {
-        console.error('Failed to configure application:', error.message);
+        console.error("Failed to configure application:", error.message);
         throw error;
     }
 }
 
-// Lógica de inicio principal (sin cambios)
+// Lógica de inicio principal
 if (require.main === module) {
     setupApp().then(appInstance => { 
         appInstance.listen(port, () => {

@@ -7,7 +7,7 @@ const Cliente = sequelize.define('Cliente', {
         allowNull: false
     }
 }, {
-    tableName: 'usuario', // <-- Nombre de la tabla
+    tableName: 'usuario', // Corregido a 'usuario' (singular)
     timestamps: false
 });
 
