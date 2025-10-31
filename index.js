@@ -8,12 +8,11 @@ const Cliente = require('./postgres'); // Asumo que este es tu modelo Sequelize
 const app = express();
 app.use(express.json()); 
 
-// ✅ CORRECCIÓN DE CORS: Permite el origen del cliente (http://localhost:5174)
 app.use(cors({ 
     origin: 'http://localhost:5174', 
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
-})); 
+}));
 
 const port = process.env.PORT || 3002; 
 
