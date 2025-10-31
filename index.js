@@ -3,19 +3,14 @@ const sequelize = require('./db');
 require('dotenv').config();
 const cors = require('cors');
 
-// Eliminamos 'corsOptions' ya que no se estaba usando correctamente.
-// const corsOptions = {
-//   origin: 'http://localhost:5174'
-// };
-
 const Cliente = require('./postgres'); // Asumo que este es tu modelo Sequelize
 
 const app = express();
 app.use(express.json()); 
 
-// ✅ CORRECCIÓN DE CORS: Ahora permite el origen http://localhost:5174, que es el que se ve en el error.
+// ✅ CORRECCIÓN DE CORS: Permite el origen del cliente (http://localhost:5174)
 app.use(cors({ 
-    origin: 'http://localhost:5174', // ESTO ES LO QUE ESTABA EN 5173
+    origin: 'http://localhost:5174', 
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
 })); 
@@ -53,9 +48,10 @@ const createClientHandler = async (req, res) => {
 
 async function setupApp() {
     try {
-        await sequelize.authenticate();
+        // La conexión a la DB fue la causa del fallo crítico
+        await sequelize.authenticate(); 
         console.log('Conexión a la base de datos establecida.');
-        await sequelize.sync({ alter: true }); 
+        await sequelize.sync({ alter: true });
         
         // --- DEFINICIÓN DE RUTAS API ---
         app.get('/api/clientes', getClientsHandler);
@@ -68,7 +64,8 @@ async function setupApp() {
 
         return app; 
     } catch (error) {
-        console.error("Fallo al configurar la aplicación o la DB:", error.message);
+        // Mejorado: Imprimimos todo el objeto 'error' para mejor diagnóstico en el despliegue
+        console.error("Fallo al configurar la aplicación o la DB:", error); 
         throw error;
     }
 }
@@ -80,7 +77,8 @@ if (require.main === module) {
             console.log('¡El servidor de Express ahora solo actúa como API!');
         });
     }).catch(err => {
-        console.error("Fallo critico al iniciar:", err.message);
+        // Mejorado: Imprimimos el error completo
+        console.error("Fallo critico al iniciar:", err);
         process.exit(1);
     });
 }
