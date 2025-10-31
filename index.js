@@ -2,6 +2,8 @@ const express = require('express');
 const sequelize = require('./db');
 require('dotenv').config();
 const cors = require('cors');
+// 🔑 Importar el módulo 'path'
+const path = require('path'); 
 
 const Cliente = require('./postgres'); 
 
@@ -23,19 +25,19 @@ const getClientsHandler = async (req, res) => {
     }
 };
 
-// Renombrada y modificada para devolver 'app' después de la configuración
+
 async function setupApp() {
     try {
-        // Intenta autenticar la conexión a la base de datos
         await sequelize.authenticate();
-        // Sincroniza los modelos (crea la tabla si no existe o aplica cambios)
         await sequelize.sync({ alter: true }); 
         
-        // --- DEFINICIÓN DE RUTAS ---
-        app.get('/', getClientsHandler);
-        app.get('/clientes', getClientsHandler);
+        // --- DEFINICIÓN DE RUTAS API ---
         
-        app.post('/clientes', async (req, res) => {
+        // 🔑 CAMBIO 1: La ruta API GET se mueve a un prefijo (ej. /api/clientes)
+        // Esto evita el conflicto con el archivo index.html
+        app.get('/api/clientes', getClientsHandler);
+        
+        app.post('/api/clientes', async (req, res) => { // La ruta POST también debe ser /api/clientes
             const { nombre } = req.body;
             
             if (!nombre) {
@@ -46,25 +48,39 @@ async function setupApp() {
                 const nuevoCliente = await Cliente.create({ nombre });
                 res.status(201).json(nuevoCliente); 
             } catch (error) {
-                // Log para depuración
                 console.error('Error al crear cliente:', error);
                 res.status(500).json({ error: 'Error al insertar el registro en la base de datos' });
             }
         });
 
-        return app; // Devuelve la instancia 'app' con todas las rutas cargadas
+        // ----------------------------------------------------------------------------------
+        // 🔑 PASO CLAVE 2: Configurar el servicio de archivos estáticos (Frontend)
+        // Express buscará el index.html en la carpeta 'dist' cuando se acceda a la raíz (/)
+        // Esto debe ir DESPUÉS de las rutas API para que las rutas API tengan prioridad.
+        // Asumiendo que tu frontend compilado está en la carpeta 'dist'.
+        // ----------------------------------------------------------------------------------
+        const frontendPath = path.join(__dirname, 'dist'); 
+        app.use(express.static(frontendPath));
+
+        // 🔑 PASO CLAVE 3 (Para Routers de Frontend como Vue/React):
+        // Para gestionar rutas que no coinciden (ej. /login o /acerca-de) sin que el servidor
+        // devuelva un 404, se devuelve siempre el index.html
+        app.get('*', (req, res) => {
+            res.sendFile(path.join(frontendPath, 'index.html'));
+        });
+
+        return app; 
     } catch (error) {
         console.error('Failed to configure application:', error.message);
-        // Es importante lanzar el error para manejar fallos de configuración críticos
         throw error;
     }
 }
 
-// Lógica de inicio principal (Solo se ejecuta si el archivo se corre directamente)
+// Lógica de inicio principal (sin cambios)
 if (require.main === module) {
     setupApp().then(appInstance => { 
         appInstance.listen(port, () => {
-             console.log(`Server running on port ${port}`);
+             console.log(`Server running on port http://localhost:${port}`);
         });
     }).catch(err => {
         console.error("Critical startup failure:", err.message);
