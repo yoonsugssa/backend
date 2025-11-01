@@ -57,7 +57,7 @@ async function startServer() {
         await sequelize.sync({ alter: true });
 
         app.listen(PORT, () => {
-            console.log(`✨ Servidor corriendo en http://localhost:${PORT}`);
+            console.log(`✨ Servidor corriendo en http://localhost:${PORT}/api/clientes`);
             console.log('✨ Este servidor solo expone la API.');
         });
     } catch (error) {
