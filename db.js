@@ -1,46 +1,50 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-const DATABASE_URL = process.env.DATABASE_URL;
-
 let sequelize;
 
+const DATABASE_URL = process.env.DATABASE_URL;
+
 if (DATABASE_URL) {
-    // Caso 1: CONEXIÓN NUBE (Usando DATABASE_URL, ya incluye SSL)
+    // 🌐 Conexión a la nube (Render, Railway, Neon, etc.)
     sequelize = new Sequelize(DATABASE_URL, {
         dialect: 'postgres',
         logging: false,
         dialectOptions: {
             ssl: {
                 require: true,
-                rejectUnauthorized: false 
-            }
-        }
+                rejectUnauthorized: false, // necesario en muchos servicios gestionados
+            },
+        },
     });
+    console.log('🔗 Conectando a base de datos remota usando DATABASE_URL');
 } else {
-    // Caso 2: CONEXIÓN LOCAL (Usando variables separadas)
-    // ** ESTA CONFIGURACIÓN AHORA INCLUYE SSL PARA CONECTAR A RENDER **
-    
-    const DB_PORT = parseInt(process.env.DB_PORT, 10) || 5432;
-    
-    sequelize = new Sequelize(
-        process.env.DB_NOMBRE,
-        process.env.DB_USUARIO,
-        process.env.DB_CLAVE,
-        {
-            host: process.env.DB_HOST || 'localhost',
-            dialect: 'postgres',
-            port: DB_PORT,
-            logging: false,
-            // 🔑 Se añade la configuración SSL:
-            dialectOptions: {
-                ssl: {
-                    require: true,
-                    rejectUnauthorized: false 
-                }
-            }
-        }
-    );
+    // 💻 Conexión local
+    const {
+        DB_NOMBRE,
+        DB_USUARIO,
+        DB_CLAVE,
+        DB_HOST = 'localhost',
+        DB_PORT = 5432,
+    } = process.env;
+
+    if (!DB_NOMBRE || !DB_USUARIO) {
+        console.warn('⚠️ Faltan variables de entorno para conexión local (DB_NOMBRE, DB_USUARIO).');
+    }
+
+    sequelize = new Sequelize(DB_NOMBRE, DB_USUARIO, DB_CLAVE, {
+        host: DB_HOST,
+        port: parseInt(DB_PORT, 10),
+        dialect: 'postgres',
+        logging: false,
+        dialectOptions: {
+            ssl: {
+                require: false, // Local no suele necesitar SSL
+                rejectUnauthorized: false,
+            },
+        },
+    });
+    console.log('💻 Conectando a base de datos local');
 }
 
 module.exports = sequelize;

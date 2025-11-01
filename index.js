@@ -1,85 +1,82 @@
-const express = require('express');
-const sequelize = require('./db'); 
-require('dotenv').config();
-const cors = require('cors');
+// Asegúrate de usar CommonJS o ES Modules correctamente.
+// Si usas "type": "module" en tu package.json, cambia todos los require() a import.
+// Aquí lo dejo en CommonJS.
 
-const Cliente = require('./postgres'); // Asumo que este es tu modelo Sequelize
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const sequelize = require('./db');  // Debe exportar una instancia válida de Sequelize
+const Cliente = require('./postgres'); // Modelo Sequelize correcto
+
+dotenv.config();
 
 const app = express();
-app.use(express.json()); 
 
-app.use(cors({ 
-    origin: 'http://localhost:5174', 
+app.use(cors({
+    origin: ['http://localhost:5173', 'http://localhost:5174'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
 }));
 
-const port = process.env.PORT || 3002; 
+app.use(express.json());
+
+const PORT = process.env.PORT || 3002;
 
 // --- HANDLER PARA OBTENER CLIENTES (GET) ---
-const getClientsHandler = async (req, res) => {
+app.get('/api/clientes', async (req, res) => {
     try {
-        const registros = await Cliente.findAll(); 
+        const registros = await Cliente.findAll();
         res.json(registros);
     } catch (error) {
-        console.error('Error al obtener clientes:', error); 
+        console.error('❌ Error al obtener clientes:', error);
         res.status(500).json({ error: 'Error interno del servidor al obtener clientes' });
     }
-};
+});
 
 // --- HANDLER PARA CREAR CLIENTES (POST) ---
-const createClientHandler = async (req, res) => {
+app.post('/api/clientes', async (req, res) => {
     const { nombre } = req.body;
-    
+
     if (!nombre) {
         return res.status(400).json({ error: 'El campo "nombre" es obligatorio.' });
     }
 
     try {
         const nuevoCliente = await Cliente.create({ nombre });
-        res.status(201).json(nuevoCliente); 
+        res.status(201).json(nuevoCliente);
     } catch (error) {
-        console.error('Error al crear cliente:', error);
+        console.error('❌ Error al crear cliente:', error);
         res.status(500).json({ error: 'Error al insertar el registro en la base de datos' });
     }
-};
+});
 
+// --- 404 para rutas no definidas ---
+app.use((req, res) => {
+    res.status(404).json({
+        error: "Ruta no encontrada. Este servidor solo expone rutas /api/clientes."
+    });
+});
 
-async function setupApp() {
+// --- Conexión y arranque ---
+async function startServer() {
     try {
-        // La conexión a la DB fue la causa del fallo crítico
-        await sequelize.authenticate(); 
-        console.log('Conexión a la base de datos establecida.');
+        await sequelize.authenticate();
+        console.log('✅ Conexión a la base de datos establecida correctamente.');
         await sequelize.sync({ alter: true });
-        
-        // --- DEFINICIÓN DE RUTAS API ---
-        app.get('/api/clientes', getClientsHandler);
-        app.post('/api/clientes', createClientHandler); 
 
-        // Manejo de 404 para rutas no definidas (puramente API)
-        app.use((req, res) => {
-            res.status(404).json({ error: "Ruta no encontrada. Este servidor solo expone rutas /api/clientes." });
+        app.listen(PORT, () => {
+            console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+            console.log('🟢 Este servidor solo expone la API.');
         });
-
-        return app; 
     } catch (error) {
-        // Mejorado: Imprimimos todo el objeto 'error' para mejor diagnóstico en el despliegue
-        console.error("Fallo al configurar la aplicación o la DB:", error); 
-        throw error;
+        console.error('💥 Error al iniciar la aplicación:', error);
+        process.exit(1);
     }
 }
 
+// Solo inicia el servidor si este archivo se ejecuta directamente
 if (require.main === module) {
-    setupApp().then(appInstance => { 
-        appInstance.listen(port, () => {
-            console.log(`Server running on port http://localhost:${port}`);
-            console.log('¡El servidor de Express ahora solo actúa como API!');
-        });
-    }).catch(err => {
-        // Mejorado: Imprimimos el error completo
-        console.error("Fallo critico al iniciar:", err);
-        process.exit(1);
-    });
+    startServer();
 }
 
-module.exports = setupApp;
+module.exports = app;
